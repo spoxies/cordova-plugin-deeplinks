@@ -5,6 +5,8 @@ Class injects plugin preferences into AndroidManifest.xml file.
 var path = require('path');
 var xmlHelper = require('../xmlHelper.js');
 
+var intentRegistery = {};
+
 module.exports = {
   writePreferences: writePreferences
 };
@@ -37,7 +39,7 @@ function writePreferences(cordovaContext, pluginPreferences) {
 
   // remove old intent-filters
   cleanManifest = removeOldOptions(manifestSource);
-
+  
   // inject intent-filters based on plugin preferences
   updatedManifest = injectOptions(cleanManifest, pluginPreferences);
 
@@ -200,13 +202,20 @@ function injectOptions(manifestData, pluginPreferences) {
   // generate intent-filters
   pluginPreferences.hosts.forEach(function(host) {
     host.paths.forEach(function(hostPath) {
-      ulIntentFilters.push(createIntentFilter(host.name, host.scheme, hostPath));
+
+      if(!intentRegistery[host.name] || !intentRegistery[host.name].includes(hostPath)){
+        ulIntentFilters.push(createIntentFilter(host.name, host.schemes, hostPath));
+        if(!intentRegistery[host.name]){
+          intentRegistery[host.name] = [];
+        }
+        intentRegistery[host.name].push(hostPath);
+      }
     });
   });
 
   // add Universal Links intent-filters to the launch activity
   launchActivity['intent-filter'] = launchActivity['intent-filter'].concat(ulIntentFilters);
-
+  
   return changedManifest;
 }
 
@@ -269,7 +278,7 @@ function isLaunchActivity(activity) {
  * @param {String} pathName - host path
  * @return {Object} intent-filter as a JSON object
  */
-function createIntentFilter(host, scheme, pathName) {
+function createIntentFilter(host, schemes, pathName) {
   var intentFilter = {
     '$': {
       'android:autoVerify': 'true'
@@ -290,11 +299,22 @@ function createIntentFilter(host, scheme, pathName) {
     }],
     'data': [{
       '$': {
-        'android:host': host,
+        'android:host': host
+      }
+    },
+  
+  ]
+  };
+
+  schemes.forEach(function(scheme){
+
+    intentFilter.data.push({
+      '$': {
         'android:scheme': scheme
       }
-    }]
-  };
+    });
+    
+  })
 
   injectPathComponentIntoIntentFilter(intentFilter, pathName);
 

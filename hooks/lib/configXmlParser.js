@@ -93,7 +93,8 @@ function constructHostEntry(xmlElement) {
   var host = {
       scheme: DEFAULT_SCHEME,
       name: '',
-      paths: []
+      paths: [],
+      schemes : []
     };
   var hostProperties = xmlElement['$'];
 
@@ -111,6 +112,9 @@ function constructHostEntry(xmlElement) {
 
   // construct paths list, defined for the given host
   host.paths = constructPaths(xmlElement);
+
+  // construct schemes list, defined for the given host
+  host.schemes = constructSchemes(xmlElement);
 
   return host;
 }
@@ -141,5 +145,29 @@ function constructPaths(xmlElement) {
 
   return paths;
 }
+
+
+/**
+ * Construct scheme list of path objects from the xml data.
+ *
+ * @param {Object} xmlElement - xml data to process
+ * @return {Array} list of path entries, each on is a JSON object
+ */
+function constructSchemes(xmlElement) {
+  if (xmlElement['schemes'] == null) {
+    return DEFAULT_SCHEME;
+  }
+
+  var schemes = [];
+  xmlElement.schemes.some(function(pathElement) {
+
+    var scheme = pathElement['$']['scheme'];
+
+    schemes.push(scheme);
+  });
+
+  return schemes;
+}
+
 
 // endregion
